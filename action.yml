@@ -1,0 +1,4 @@
+name: 'Build AVADO Package'
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
