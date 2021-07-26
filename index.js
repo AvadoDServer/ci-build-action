@@ -27,7 +27,7 @@ async function run() {
         const prManifest = JSON.parse(fs.readFileSync(manifestFilePath));
 
         // Fail when upstream version is increased, but package version is not
-        if (mastermanifest && masterManifest.upstream != prManifest.upstream && masterManifest.version == prManifest.version) {
+        if (masterManifest && masterManifest.upstream != prManifest.upstream && masterManifest.version == prManifest.version) {
             return core.setFailed('Upstream updated, but package version is not.');
         }
 
