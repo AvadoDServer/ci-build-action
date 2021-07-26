@@ -22,14 +22,19 @@ async function run() {
         await exec.exec('npm i -g git+https://github.com/AvadoDServer/AVADOSDK.git');
 
         await exec.exec(`git clone https://github.com/${payload.repository.full_name}.git .`);
-        const masterManifest = JSON.parse(fs.readFileSync('./dappnode_package.json'));
+        const manifestFilePath = './dappnode_package.json';
+        let masterManifest = null;
+
+        if (fs.existsSync(manifestFilePath)) {
+            masterManifest = JSON.parse(fs.readFileSync(manifestFilePath));
+        }
 
         await exec.exec(`git fetch origin pull/${payload.pull_request.number}/head:pr`);
         await exec.exec(`git checkout pr`);
-        const prManifest = JSON.parse(fs.readFileSync('./dappnode_package.json'));
+        const prManifest = JSON.parse(fs.readFileSync(manifestFilePath));
 
         // Fail when upstream version is increased, but package version is not
-        if (masterManifest.upstream != prManifest.upstream && masterManifest.version == prManifest.version) {
+        if (mastermanifest && masterManifest.upstream != prManifest.upstream && masterManifest.version == prManifest.version) {
             return core.setFailed('Upstream updated, but package version is not.');
         }
 
