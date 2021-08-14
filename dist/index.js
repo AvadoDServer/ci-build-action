@@ -33,9 +33,9 @@ async function run() {
         await exec.exec(`git checkout pr`);
         const prManifest = JSON.parse(fs.readFileSync(manifestFilePath));
 
-        // Fail when upstream version is increased, but package version is not
+        // Execute `avadosdk increase patch` when upstream version is increased, but package version is not
         if (masterManifest && masterManifest.upstream != prManifest.upstream && masterManifest.version == prManifest.version) {
-            return core.setFailed('Upstream updated, but package version is not.');
+            await exec.exec(`"${avadoSdkPath}"`, ['increase', 'patch']);
         }
 
         await exec.exec(`"${avadoSdkPath}"`, ['build', '--provider', 'http://80.208.229.228:5001']);
