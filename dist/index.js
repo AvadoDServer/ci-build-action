@@ -42,7 +42,11 @@ async function run() {
 
         const filenameToStoreGitDiff = `${payload.pull_request.head.sha}.diff`;
 
-        await exec.exec(`/bin/bash -c "git diff >> ${filenameToStoreGitDiff}"`);
+        await exec.exec(`/bin/bash -c "ls"`);
+        await exec.exec(`/bin/bash -c "cat releases.json"`);
+        await exec.exec(`/bin/bash -c "git add --force releases.json dappnode_package.json docker-compose.yml"`);
+        await exec.exec(`/bin/bash -c "git diff --cached"`);
+        await exec.exec(`/bin/bash -c "git diff --cached >> ${filenameToStoreGitDiff}"`);
 
         const files = [
             filenameToStoreGitDiff,
