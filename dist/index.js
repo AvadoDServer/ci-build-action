@@ -17820,6 +17820,9 @@ async function run() {
 
         await exec.exec(`"${avadoSdkPath}"`, ['build', '--provider', 'http://80.208.229.228:5001']);
 
+        // Add releases.json, this is required for releasing later`
+        await exec.exec(`git add --force --intent-to-add releases.json`);
+
         const filenameToStoreGitDiff = `${payload.pull_request.head.sha}.diff`;
 
         await exec.exec(`/bin/bash -c "git diff >> ${filenameToStoreGitDiff}"`);
