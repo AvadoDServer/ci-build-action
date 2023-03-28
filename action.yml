@@ -7,5 +7,7 @@ runs:
       uses: actions/setup-node@v3
       with:
         node-version: 16.15.0
+    - run: sudo find / -iname "*AvadoDServer-ci-build-action*"
+      shell: bash
     - run: node /run/act/actions/AvadoDServer-ci-build-action@update/dist/index.js
       shell: bash
