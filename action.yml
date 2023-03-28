@@ -1,4 +1,5 @@
 name: 'Build AVADO Package'
+description: 'Builds the AVADO package with GitHub actions'
 runs:
   using: 'node16'
   main: 'dist/index.js'

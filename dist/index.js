@@ -17790,7 +17790,6 @@ const artifact = __nccwpck_require__(2605);
 const artifactClient = artifact.create();
 const exec = __nccwpck_require__(1514);
 const { context } = __nccwpck_require__(5438);
-const fs = __nccwpck_require__(7147);
 
 async function run() {
     try {
@@ -17802,21 +17801,9 @@ async function run() {
         await exec.exec('npm i -g git+https://github.com/AvadoDServer/AVADOSDK.git');
 
         await exec.exec(`git clone https://github.com/${payload.repository.full_name}.git .`);
-        const manifestFilePath = './dappnode_package.json';
-        let masterManifest = null;
-
-        if (fs.existsSync(manifestFilePath)) {
-            masterManifest = JSON.parse(fs.readFileSync(manifestFilePath));
-        }
 
         await exec.exec(`git fetch origin pull/${payload.pull_request.number}/head:pr`);
         await exec.exec(`git checkout pr`);
-        const prManifest = JSON.parse(fs.readFileSync(manifestFilePath));
-
-        // Execute `avadosdk increase patch` when upstream version is increased, but package version is not
-        if (masterManifest && masterManifest.upstream != prManifest.upstream && masterManifest.version == prManifest.version) {
-            await exec.exec(`"${avadoSdkPath}"`, ['increase', 'patch']);
-        }
 
         await exec.exec(`"${avadoSdkPath}"`, ['build', '--provider', 'http://80.208.229.228:5001']);
 
