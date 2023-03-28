@@ -1,5 +1,12 @@
 name: 'Build AVADO Package'
 description: 'Builds the AVADO package with GitHub actions'
 runs:
-  using: 'node16'
-  main: 'dist/index.js'
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16.15.0
+    - run: node dist/index.js
+      shell: bash
+    
