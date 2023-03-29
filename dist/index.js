@@ -17799,6 +17799,11 @@ async function run() {
         const avadoSdkPath = `${npmGlobalPath}/bin/avadosdk`;
         core.exportVariable('NPM_CONFIG_PREFIX', npmGlobalPath);
 
+        await exec.exec('/bin/bash -c "nvm install 16.15.0"');
+        
+        await exec.exec('/bin/bash -c "nvm alias default 16.15.0"');
+
+
         await exec.exec('/bin/bash -c "npm i -g git+https://github.com/AvadoDServer/AVADOSDK.git"');
         
         await exec.exec(`/bin/bash -c "${avadoSdkPath} --version"`)
