@@ -12,10 +12,9 @@ async function run() {
         const avadoSdkPath = `${npmGlobalPath}/bin/avadosdk`;
         core.exportVariable('NPM_CONFIG_PREFIX', npmGlobalPath);
 
-        await exec.exec('/bin/bash -c "sudo apt install curl; curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash')
-        await exec.exec('/bin/bash -c "nvm install 16.15.0"');
-        
-        await exec.exec('/bin/bash -c "nvm alias default 16.15.0"');
+        // await exec.exec('/bin/bash -c "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash')
+        // await exec.exec('/bin/bash -c "nvm install 16.15.0"');
+        // await exec.exec('/bin/bash -c "nvm alias default 16.15.0"');
 
         await exec.exec('/bin/bash -c "npm i -g git+https://github.com/AvadoDServer/AVADOSDK.git"');
         
