@@ -13,7 +13,9 @@ async function run() {
         core.exportVariable('NPM_CONFIG_PREFIX', npmGlobalPath);
 
         await exec.exec('/bin/bash -c "npm i -g git+https://github.com/AvadoDServer/AVADOSDK.git"');
+        
         await exec.exec('/bin/bash -c "avadosdk --version"')
+
         await exec.exec(`git clone https://github.com/${payload.repository.full_name}.git .`);
         const manifestFilePath = './dappnode_package.json';
         let masterManifest = null;

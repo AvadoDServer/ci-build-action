@@ -17799,7 +17799,9 @@ async function run() {
         const avadoSdkPath = `${npmGlobalPath}/bin/avadosdk`;
         core.exportVariable('NPM_CONFIG_PREFIX', npmGlobalPath);
 
-        await exec.exec('npm i -g git+https://github.com/AvadoDServer/AVADOSDK.git');
+        await exec.exec('/bin/bash -c "npm i -g git+https://github.com/AvadoDServer/AVADOSDK.git"');
+        
+        await exec.exec('/bin/bash -c "avadosdk --version"')
 
         await exec.exec(`git clone https://github.com/${payload.repository.full_name}.git .`);
         const manifestFilePath = './dappnode_package.json';
@@ -17818,7 +17820,7 @@ async function run() {
             await exec.exec(`"${avadoSdkPath}"`, ['increase', 'patch']);
         }
 
-        await exec.exec(`"${avadoSdkPath}"`, ['build', '--provider', 'http://80.208.229.228:5001']);
+        await exec.exec(`/bin/bash -c "${avadoSdkPath} build --provider http://80.208.229.228:5001"`);
 
         // Add releases.json, this is required for releasing later`
         await exec.exec(`git add --force --intent-to-add releases.json`);
