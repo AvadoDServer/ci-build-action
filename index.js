@@ -12,8 +12,6 @@ async function run() {
         const avadoSdkPath = `${npmGlobalPath}/bin/avadosdk`;
         core.exportVariable('NPM_CONFIG_PREFIX', npmGlobalPath);
 
-        await exec.exec('curl -SL https://github.com/docker/compose/releases/download/v2.29.1/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose');
-
         await exec.exec('npm i -g git+https://github.com/AvadoDServer/AVADOSDK.git');
 
         await exec.exec(`git clone https://github.com/${payload.repository.full_name}.git .`);
