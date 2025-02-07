@@ -40,12 +40,11 @@ async function run() {
 
         await exec.exec(`/bin/bash -c "git diff >> ${filenameToStoreGitDiff}"`);
 
-        const files = [
-            filenameToStoreGitDiff,
-        ]
-        const rootDirectory = '.'
+        const artifactName = `${payload.pull_request.head.sha}-diff`;
+        const files = [filenameToStoreGitDiff];
+        const rootDirectory = '.';
 
-        const uploadResult = await artifactClient.uploadArtifact(filenameToStoreGitDiff, files, rootDirectory);
+        const uploadResult = await artifactClient.uploadArtifact(artifactName, files, rootDirectory);
 
         console.log(uploadResult);
     } catch (error) {
