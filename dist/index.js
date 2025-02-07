@@ -17823,11 +17823,11 @@ async function run() {
         // Add releases.json, this is required for releasing later`
         await exec.exec(`git add --force --intent-to-add releases.json`);
 
-        const filenameToStoreGitDiff = `${payload.pull_request.head.sha}-diff`;
+        const filenameToStoreGitDiff = `${payload.pull_request.head.sha}_diff`;
 
         await exec.exec(`/bin/bash -c "git diff >> ${filenameToStoreGitDiff}"`);
 
-        const artifactName = `${payload.pull_request.head.sha}-diff`;
+        const artifactName = `${payload.pull_request.head.sha}_diff`;
         const files = [filenameToStoreGitDiff];
         const rootDirectory = '.';
 
