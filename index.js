@@ -1,6 +1,6 @@
 const core = require('@actions/core');
 const artifact = require('@actions/artifact');
-const artifactClient = artifact.DefaultArtifactClient()
+const artifactClient = new artifact.DefaultArtifactClient()
 const exec = require('@actions/exec');
 const { context } = require('@actions/github');
 const fs = require('fs');
