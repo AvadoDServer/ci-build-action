@@ -5,6 +5,33 @@ const exec = require('@actions/exec');
 const { context } = require('@actions/github');
 const fs = require('fs');
 
+// Read a JSON manifest file, handling the case where git stores a symlink
+// whose target is the JSON content itself (instead of a file path).
+// This happens when a symlink file is replaced with inline content without
+// first deleting the symlink, causing git to keep the symlink mode.
+function readManifest(filePath) {
+    try {
+        return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    } catch (e) {
+        if (e.code === 'ENAMETOOLONG') {
+            const content = fs.readlinkSync(filePath);
+            return JSON.parse(content);
+        }
+        throw e;
+    }
+}
+
+// Check if a manifest file exists, using lstatSync so that symlinks
+// (even broken ones) are detected rather than silently skipped.
+function manifestExists(filePath) {
+    try {
+        fs.lstatSync(filePath);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
 async function run() {
     try {
         const payload = context.payload;
@@ -18,13 +45,13 @@ async function run() {
         const manifestFilePath = './dappnode_package.json';
         let masterManifest = null;
 
-        if (fs.existsSync(manifestFilePath)) {
-            masterManifest = JSON.parse(fs.readFileSync(manifestFilePath));
+        if (manifestExists(manifestFilePath)) {
+            masterManifest = readManifest(manifestFilePath);
         }
 
         await exec.exec(`git fetch origin pull/${payload.pull_request.number}/head:pr`);
         await exec.exec(`git checkout pr`);
-        const prManifest = JSON.parse(fs.readFileSync(manifestFilePath));
+        const prManifest = readManifest(manifestFilePath);
 
         // Execute `avadosdk increase patch` when upstream version is increased, but package version is not
         if (masterManifest && masterManifest.upstream != prManifest.upstream && masterManifest.version == prManifest.version) {
