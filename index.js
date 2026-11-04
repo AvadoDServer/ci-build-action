@@ -4,6 +4,8 @@ const artifactClient = new artifact.DefaultArtifactClient()
 const exec = require('@actions/exec');
 const { context } = require('@actions/github');
 const fs = require('fs');
+const { gitReadOptions } = require('./gitAuth');
+const { uploadSbom } = require('./sbom');
 
 // Read a JSON manifest file, handling the case where git stores a symlink
 // whose target is the JSON content itself (instead of a file path).
@@ -41,7 +43,11 @@ async function run() {
 
         await exec.exec('npm i -g git+https://github.com/AvadoDServer/AVADOSDK.git');
 
-        await exec.exec(`git clone https://github.com/${payload.repository.full_name}.git .`);
+        // Public repositories are cloned anonymously, exactly as before.
+        // Private ones need the token; see gitAuth.js.
+        const gitOptions = gitReadOptions(payload.repository, core.getInput('token'));
+
+        await exec.exec(`git clone https://github.com/${payload.repository.full_name}.git .`, undefined, gitOptions);
         const manifestFilePath = './dappnode_package.json';
         let masterManifest = null;
 
@@ -49,7 +55,7 @@ async function run() {
             masterManifest = readManifest(manifestFilePath);
         }
 
-        await exec.exec(`git fetch origin pull/${payload.pull_request.number}/head:pr`);
+        await exec.exec(`git fetch origin pull/${payload.pull_request.number}/head:pr`, undefined, gitOptions);
         await exec.exec(`git checkout pr`);
         const prManifest = readManifest(manifestFilePath);
 
@@ -74,6 +80,17 @@ async function run() {
         const uploadResult = await artifactClient.uploadArtifact(artifactName, files, rootDirectory);
 
         console.log(uploadResult);
+
+        // Software bill of materials of the built image, as a separate
+        // artifact. Runs after the release diff is safely uploaded and never
+        // fails the build (see sbom.js).
+        if (core.getInput('sbom') !== 'false') {
+            await uploadSbom({
+                artifactClient,
+                loadManifest: () => readManifest(manifestFilePath),
+                sha: payload.pull_request.head.sha,
+            });
+        }
     } catch (error) {
         core.setFailed(error.message);
     }

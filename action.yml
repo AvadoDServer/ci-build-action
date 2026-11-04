@@ -1,4 +1,11 @@
 name: 'Build AVADO Package'
+inputs:
+  token:
+    description: 'GitHub token used to clone the package repository when it is private. The default (the workflow token) is enough. Public repositories are cloned without it.'
+    default: ${{ github.token }}
+  sbom:
+    description: 'Set to "false" to skip the software bill of materials (SBOM) artifact. A problem making the SBOM never fails the build.'
+    default: 'true'
 runs:
   using: 'node20'
   main: 'dist/index.js'
