@@ -1,0 +1,20 @@
+name: 'Start test for an AVADO package'
+description: >
+  Runs after AvadoDServer/ci-build-action in the same job: starts the package
+  from the image the build made and fails when a container crashes, keeps
+  restarting or exits with an error within the watch time.
+inputs:
+  seconds:
+    description: 'How long to watch the started package'
+    default: '90'
+  compose-file:
+    description: 'Compose file of the package'
+    default: 'docker-compose.yml'
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        SMOKE_SECONDS: ${{ inputs.seconds }}
+        SMOKE_COMPOSE: ${{ inputs.compose-file }}
+      run: bash "$GITHUB_ACTION_PATH/smoke.sh"

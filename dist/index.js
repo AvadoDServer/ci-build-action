@@ -126036,7 +126036,8 @@ const core = __nccwpck_require__(42186);
 const artifact = __nccwpck_require__(79450);
 const artifactClient = new artifact.DefaultArtifactClient()
 const exec = __nccwpck_require__(71514);
-const { context } = __nccwpck_require__(95438);
+const github = __nccwpck_require__(95438);
+const { context } = github;
 const fs = __nccwpck_require__(57147);
 const { gitReadOptions } = __nccwpck_require__(86036);
 const { uploadSbom } = __nccwpck_require__(52295);
@@ -126071,6 +126072,24 @@ function manifestExists(filePath) {
 async function run() {
     try {
         const payload = context.payload;
+
+        // The pull request to build: the one of a pull_request event, or the
+        // `pr` input of a workflow_dispatch run. Update bots open their pull
+        // requests with the workflow token, which starts no pull_request
+        // workflow, so they start the Build by dispatch instead.
+        let pullRequest = payload.pull_request;
+        if (!pullRequest) {
+            const number = Number(core.getInput('pr'));
+            if (!number) {
+                throw new Error('No pull request to build: run this on pull_request, or pass the "pr" input.');
+            }
+            const [owner, repo] = payload.repository.full_name.split('/');
+            const octokit = github.getOctokit(core.getInput('token'));
+            pullRequest = (await octokit.rest.pulls.get({ owner, repo, pull_number: number })).data;
+            if (pullRequest.state !== 'open') {
+                throw new Error(`Pull request #${number} is ${pullRequest.state}.`);
+            }
+        }
         const npmGlobalPath = '/home/runner/.npm-global';
         const avadoSdkPath = `${npmGlobalPath}/bin/avadosdk`;
         core.exportVariable('NPM_CONFIG_PREFIX', npmGlobalPath);
@@ -126089,7 +126108,7 @@ async function run() {
             masterManifest = readManifest(manifestFilePath);
         }
 
-        await exec.exec(`git fetch origin pull/${payload.pull_request.number}/head:pr`, undefined, gitOptions);
+        await exec.exec(`git fetch origin pull/${pullRequest.number}/head:pr`, undefined, gitOptions);
         await exec.exec(`git checkout pr`);
         const prManifest = readManifest(manifestFilePath);
 
@@ -126103,11 +126122,11 @@ async function run() {
         // Add releases.json, this is required for releasing later`
         await exec.exec(`git add --force --intent-to-add releases.json`);
 
-        const filenameToStoreGitDiff = `asset-${payload.pull_request.head.sha}-diff`;
+        const filenameToStoreGitDiff = `asset-${pullRequest.head.sha}-diff`;
 
         await exec.exec(`/bin/bash -c "git diff >> ${filenameToStoreGitDiff}"`);
 
-        const artifactName = `asset-${payload.pull_request.head.sha}-diff`;
+        const artifactName = `asset-${pullRequest.head.sha}-diff`;
         const files = [filenameToStoreGitDiff];
         const rootDirectory = '.';
 
@@ -126122,7 +126141,7 @@ async function run() {
             await uploadSbom({
                 artifactClient,
                 loadManifest: () => readManifest(manifestFilePath),
-                sha: payload.pull_request.head.sha,
+                sha: pullRequest.head.sha,
             });
         }
     } catch (error) {

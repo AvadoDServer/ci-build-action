@@ -1,0 +1,34 @@
+name: Start test of every package
+# Builds each package's main branch and runs the start test on it, to check
+# the test itself (a package that fails here would block its automatic
+# updates). Manual only.
+on:
+  workflow_dispatch:
+  push:
+    branches: [dispatch-and-smoke]
+    paths: ['smoke/**', '.github/workflows/smoke-packages.yml']
+permissions: { contents: read }
+jobs:
+  smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        repo: [AVADO-DNP-Aztec, AVADO-DNP-BitcoinCore, AVADO-DNP-Fulcrum, AVADO-DNP-HomeAssistant, AVADO-DNP-Immich,
+               AVADO-DNP-Jellyfin, AVADO-DNP-Lightning, AVADO-DNP-Mempool, AVADO-DNP-Paperless-ngx, AVADO-DNP-Private-Assistant,
+               AVADO-DNP-Starknet, AVADO-DNP-Tailscale, AVADO-DNP-Vaultwarden, AVADO-DNP-Teku, AVADO-DNP-Nimbus,
+               AVADO-DNP-NearBP, AVADO-DNP-Prysm-beacon-chain, AVADO-DNP-Prysm-validator, AVADO-DNP-Nethermind,
+               AVADO-DNP-AvalancheGo, dappnode-geth]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: action }
+      - uses: actions/checkout@v4
+        with: { repository: 'AvadoDServer/${{ matrix.repo }}', path: pkg }
+      - name: Build
+        working-directory: pkg
+        run: docker compose build
+      - name: Start test
+        working-directory: pkg
+        run: bash ../action/smoke/smoke.sh
+        env: { SMOKE_SECONDS: '90' }
