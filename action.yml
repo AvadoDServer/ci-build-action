@@ -6,6 +6,9 @@ inputs:
   sbom:
     description: 'Set to "false" to skip the software bill of materials (SBOM) artifact. A problem making the SBOM never fails the build.'
     default: 'true'
+  pr:
+    description: 'Pull request number to build when the workflow is not run by a pull_request event (workflow_dispatch). Optional.'
+    default: ''
 runs:
   using: 'node24'
   main: 'dist/index.js'
