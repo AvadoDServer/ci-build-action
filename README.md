@@ -42,3 +42,32 @@ After the build, the action lists everything inside the package image
 it as the artifact `sbom-<name>_<version>-<commit>`, in SPDX and CycloneDX
 JSON. This runs after the release diff is uploaded and never fails the build:
 any problem is only a warning. Turn it off with `sbom: 'false'`.
+
+### Building by dispatch (`pr` input)
+
+Update bots open their pull requests with the workflow token, which starts no
+`pull_request` workflow. They start the Build with `workflow_dispatch` and the
+pull request number instead; the action then reads that pull request:
+
+```yaml
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      pr: { description: 'Pull request number to build', required: true }
+...
+      - uses: AvadoDServer/ci-build-action@main
+        with:
+          pr: ${{ inputs.pr }}
+```
+
+### Start test (`smoke`)
+
+`AvadoDServer/ci-build-action/smoke@main`, as the next step of the same job,
+starts the package's `docker-compose.yml` from the image the build just made,
+watches it for 90 s (input `seconds`) and fails when a container crashed,
+keeps restarting or exited with an error, or when a client under supervisord
+entered FATAL/BACKOFF or exited unexpectedly. A package can adapt the test to
+CI with a compose override in `.github/smoke-compose.yml`. The workflow
+`smoke-packages.yml` here runs it over every package with an update bot and
+checks that it catches crashes.

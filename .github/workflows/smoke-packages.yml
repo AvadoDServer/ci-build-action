@@ -4,8 +4,7 @@ name: Start test of every package
 # updates). Manual only.
 on:
   workflow_dispatch:
-  push:
-    branches: [dispatch-and-smoke]
+  pull_request:
     paths: ['smoke/**', '.github/workflows/smoke-packages.yml']
 permissions: { contents: read }
 jobs:

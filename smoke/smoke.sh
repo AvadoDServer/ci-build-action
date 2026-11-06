@@ -14,15 +14,19 @@ summary() { echo "$*" >> "$GITHUB_STEP_SUMMARY"; }
 if [ ! -f "$COMPOSE" ]; then
   echo "No $COMPOSE here, nothing to start."; exit 0
 fi
+# A package can adapt the test to CI with .github/smoke-compose.yml, a compose
+# override (for example a fixed public IP where the client looks its own up).
+FILES=(-f "$COMPOSE")
+[ -f .github/smoke-compose.yml ] && FILES+=(-f .github/smoke-compose.yml) && echo "Using .github/smoke-compose.yml"
 
 # Networks a box has and the package expects (dncore_network and the like).
-docker compose -f "$COMPOSE" config --format json 2>/dev/null |
+docker compose "${FILES[@]}" config --format json 2>/dev/null |
   jq -r '.networks // {} | to_entries[] | select(.value.external == true) | .value.name // .key' |
   while read -r net; do docker network create "$net" >/dev/null 2>&1 || true; done
 
-if ! docker compose -p "$P" -f "$COMPOSE" up -d 2>&1; then
+if ! docker compose -p "$P" "${FILES[@]}" up -d 2>&1; then
   summary "### Start test: FAILED, the package did not start"
-  docker compose -p "$P" -f "$COMPOSE" logs --no-color --tail 100 || true
+  docker compose -p "$P" "${FILES[@]}" logs --no-color --tail 100 || true
   exit 1
 fi
 
@@ -33,7 +37,7 @@ bad=0
 summary "### Start test (${WAIT}s)"
 summary "| container | state | restarts | exit code | health |"
 summary "|---|---|---|---|---|"
-for id in $(docker compose -p "$P" -f "$COMPOSE" ps -aq); do
+for id in $(docker compose -p "$P" "${FILES[@]}" ps -aq); do
   read -r name state restarts code health < <(docker inspect -f \
     '{{.Name}} {{.State.Status}} {{.RestartCount}} {{.State.ExitCode}} {{if .State.Health}}{{.State.Health.Status}}{{else}}-{{end}}' "$id")
   name=${name#/}
@@ -62,7 +66,7 @@ for id in $(docker compose -p "$P" -f "$COMPOSE" ps -aq); do
   fi
 done
 
-docker compose -p "$P" -f "$COMPOSE" down -v --timeout 20 >/dev/null 2>&1 || true
+docker compose -p "$P" "${FILES[@]}" down -v --timeout 20 >/dev/null 2>&1 || true
 if [ "$bad" = 1 ]; then
   summary "**FAILED**: a container crashed or keeps restarting (logs in the step output)."
   exit 1
