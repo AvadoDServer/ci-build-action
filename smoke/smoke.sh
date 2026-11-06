@@ -42,6 +42,18 @@ for id in $(docker compose -p "$P" -f "$COMPOSE" ps -aq); do
   elif [ "$state" = "exited" ] && [ "$code" = "0" ] && [ "$restarts" = "0" ]; then :   # a one-shot helper that finished
   else verdict=FAILED; bad=1
   fi
+  # Clients under supervisord: the container keeps running when the client
+  # inside crashes, so ask supervisord and read its log as well.
+  if [ "$state" = "running" ]; then
+    sv=$(docker exec "$id" sh -c 'command -v supervisorctl >/dev/null 2>&1 && supervisorctl status' 2>/dev/null || true)
+    if grep -qE '\s(FATAL|BACKOFF)\s' <<<"$sv"; then
+      echo "supervisord: $(grep -E '\s(FATAL|BACKOFF)\s' <<<"$sv" | tr -s ' ' | tr '\n' ';')"; verdict=FAILED; bad=1
+    fi
+    crashes=$(docker logs "$id" 2>&1 | grep -E 'entered FATAL state|exited: .*\(exit status [1-9][0-9]*; not expected\)' || true)
+    if [ -n "$crashes" ]; then
+      echo "supervisord log: $(head -5 <<<"$crashes" | tr '\n' ';')"; verdict=FAILED; bad=1
+    fi
+  fi
   [ "$health" = "unhealthy" ] && echo "::warning::$name reports unhealthy (not counted: a health check may need the box's network)"
   summary "| $name | $state | $restarts | $code | $health |"
   echo "$name: $state, restarts $restarts, exit $code, health $health -> $verdict"

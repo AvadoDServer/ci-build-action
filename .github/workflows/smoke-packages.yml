@@ -32,3 +32,33 @@ jobs:
         working-directory: pkg
         run: bash ../action/smoke/smoke.sh
         env: { SMOKE_SECONDS: '90' }
+  # The test must fail on a package that crashes: a crash loop, an error exit,
+  # and a client that crashes under supervisord.
+  catches-crashes:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        case: [loop, exit, supervisord]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package that crashes
+        run: |
+          mkdir pkg && cd pkg
+          case "${{ matrix.case }}" in
+            loop) cmd='["sh","-c","sleep 2; exit 3"]'; restart=always ;;
+            exit) cmd='["sh","-c","exit 2"]'; restart=no ;;
+            supervisord)
+              printf '[supervisord]\nnodaemon=true\nuser=root\n[unix_http_server]\nfile=/tmp/s.sock\n[supervisorctl]\nserverurl=unix:///tmp/s.sock\n[rpcinterface:supervisor]\nsupervisor.rpcinterface_factory=supervisor.rpcinterface:make_main_rpcinterface\n[program:client]\ncommand=sh -c "sleep 1; exit 1"\nstartretries=2\n' > s.conf
+              printf 'FROM python:3.12-alpine\nRUN pip install -q supervisor\nCOPY s.conf /s.conf\nCMD ["supervisord","-c","/s.conf"]\n' > Dockerfile
+              cmd='["supervisord","-c","/s.conf"]'; restart=always ;;
+          esac
+          [ -f Dockerfile ] || printf 'FROM busybox\n' > Dockerfile
+          printf "services:\n  crash:\n    image: crash:test\n    build: .\n    command: %s\n    restart: %s\n" "$cmd" "$restart" > docker-compose.yml
+          docker compose build -q
+      - name: Start test must fail
+        working-directory: pkg
+        env: { SMOKE_SECONDS: '30' }
+        run: |
+          if bash ../smoke/smoke.sh; then echo "::error::start test passed a crashing package"; exit 1; fi
+          echo "start test failed as it should"
